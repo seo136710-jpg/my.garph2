@@ -86,11 +86,40 @@ try:
     st.divider()
 
     # ----------------------------------------------------
-    # 구역 3: 개봉 첫 주 관객 vs 총 관객 수 관계 (산점도)
+    # 구역 3: 총 관객 수 히스토그램
     # ----------------------------------------------------
-    st.header("3. 개봉 첫 주 관객과 총 관객 수의 관계")
+    st.header("3. 총 관객 수 분포 (히스토그램)")
     
-    fig3 = px.scatter(
+    fig3 = px.histogram(
+        df,
+        x='total_audi',
+        nbins=30,
+        title='총 관객 수(total_audi) 분포 히스토그램',
+        labels={'total_audi': '총 관객 수', 'count': '영화 수'},
+        color_discrete_sequence=['#636EFA']
+    )
+    fig3.update_traces(
+        hovertemplate='<b>총 관객 수 구간:</b> %{x:,}명<br><b>영화 수:</b> %{y}편<extra></extra>'
+    )
+    fig3.update_layout(yaxis_title='영화 수(편)')
+    
+    st.plotly_chart(fig3, use_container_width=True)
+    
+    # 최다 관객 영화 정보 자동 산출
+    top_movie = df.loc[df['total_audi'].idxmax()]
+    top_movie_name = top_movie['movieNm']
+    top_movie_audi = top_movie['total_audi']
+    
+    st.info(f"💡 **이 그래프로 알 수 있는 것:** 대부분의 영화는 총 관객 수가 하위 구간(약 200만 명 이하)에 밀집되어 있는 쏠림 분포를 나타냅니다. 한편, 가장 많은 관객을 동원한 영화는 **'{top_movie_name}'**(총 {top_movie_audi:,}명)입니다.")
+
+    st.divider()
+
+    # ----------------------------------------------------
+    # 구역 4: 개봉 첫 주 관객 vs 총 관객 수 관계 (산점도)
+    # ----------------------------------------------------
+    st.header("4. 개봉 첫 주 관객과 총 관객 수의 관계")
+    
+    fig4 = px.scatter(
         df,
         x='first_week_audi',
         y='total_audi',
@@ -105,34 +134,34 @@ try:
         },
         title='개봉 첫 주 관객 수 vs 총 관객 수 (원 크기: 개봉일 스크린 수)'
     )
-    fig3.update_traces(
+    fig4.update_traces(
         hovertemplate='<b>%{hovertext}</b><br>개봉 첫 주 관객: %{x:,}명<br>총 관객: %{y:,}명<extra></extra>'
     )
     
-    st.plotly_chart(fig3, use_container_width=True)
+    st.plotly_chart(fig4, use_container_width=True)
     
     st.info("💡 **이 그래프로 알 수 있는 것:** 개봉 첫 주 관객 수가 많을수록 총 관객 수도 증가하는 강한 양의 상관관계를 보이며, 초기 흥행 여파가 최종 성패에 결정적인 영향을 준다는 점을 파악할 수 있습니다.")
 
     st.divider()
 
     # ----------------------------------------------------
-    # 구역 4: 주요 흥행 지표 간 상관관계 분석 (히트맵)
+    # 구역 5: 주요 흥행 지표 간 상관관계 분석 (히트맵)
     # ----------------------------------------------------
-    st.header("4. 흥행 지표 간 관계 분석")
+    st.header("5. 흥행 지표 간 관계 분석")
     
     num_cols = ['first_scrn', 'first_show', 'first_week_audi', 'total_audi', 'days_in_top10']
     available_cols = [c for c in num_cols if c in df.columns]
     
     if len(available_cols) > 1:
         corr = df[available_cols].corr()
-        fig4 = px.imshow(
+        fig5 = px.imshow(
             corr,
             text_auto='.2f',
             color_continuous_scale='Blues',
             title='흥행 지표 간 상관계수 히트맵',
             labels=dict(x="지표", y="지표", color="상관계수")
         )
-        st.plotly_chart(fig4, use_container_width=True)
+        st.plotly_chart(fig5, use_container_width=True)
         
         st.info("💡 **이 그래프로 알 수 있는 것:** 개봉일 스크린 수, 상영 횟수, 초기 관객 수 및 톱10 유지 기간 사이의 밀접한 상관성을 통해 스크린 확보 수준이 흥행 유지력에 미치는 파급력을 비교 분석할 수 있습니다.")
 
