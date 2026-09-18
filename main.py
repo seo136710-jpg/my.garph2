@@ -19,15 +19,24 @@ def load_data():
     url = "https://raw.githubusercontent.com/greatsong/modudata/main/data/kobis_movies.csv"
     df = pd.read_csv(url)
     
-    # 장르 전처리 (세로막대 기호 '|' 기준 첫 번째 장르만 추출)
+    # 안전한 첫 번째 요소 추출 함수
+    def get_first_item(val):
+        if pd.isna(val) or val is None:
+            return '미상'
+        val_str = str(val).strip()
+        if not val_str or val_str.lower() == 'nan':
+            return '미상'
+        return val_str.split('|')[0].strip()
+
+    # 장르 전처리
     if 'genre' in df.columns:
-        df['genre_first'] = df['genre'].astype(str).apply(lambda x: x.split('|')[0].strip())
+        df['genre_first'] = df['genre'].apply(get_first_item)
     else:
         df['genre_first'] = '미상'
         
-    # 제작 국가 전처리
+    # 제작 국가 전처리 (에러 발생 구역 방어 처리)
     if 'nation' in df.columns:
-        df['nation_clean'] = df['nation'].fillna('미상').astype(str).apply(lambda x: x.split('|')[0].strip())
+        df['nation_clean'] = df['nation'].apply(get_first_item)
     else:
         df['nation_clean'] = '미상'
         
@@ -210,11 +219,10 @@ try:
     st.divider()
 
     # ----------------------------------------------------
-    # 구역 7: 제작 국가별 장르 분포 (선버스트 차트) [새로 추가됨]
+    # 구역 7: 제작 국가별 장르 분포 (선버스트 차트)
     # ----------------------------------------------------
     st.header("7. 제작 국가 및 장르별 영화 편수 분포 (선버스트 차트)")
     
-    # 국가별 및 장르별 영화 편수 집계
     nation_genre_counts = df.groupby(['nation_clean', 'genre_first']).size().reset_index(name='movie_count')
     
     fig7 = px.sunburst(
