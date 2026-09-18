@@ -25,6 +25,12 @@ def load_data():
     else:
         df['genre_first'] = '미상'
         
+    # 제작 국가 전처리
+    if 'nation' in df.columns:
+        df['nation_clean'] = df['nation'].fillna('미상').astype(str).apply(lambda x: x.split('|')[0].strip())
+    else:
+        df['nation_clean'] = '미상'
+        
     return df
 
 try:
@@ -174,7 +180,7 @@ try:
     st.divider()
 
     # ----------------------------------------------------
-    # 구역 6: 개봉일 스크린 수 vs 총 관객 수 (버블 차트 - 원 크기: 개봉 첫 주 관객 수) [새로 추가됨]
+    # 구역 6: 개봉일 스크린 수 vs 총 관객 수 (버블 차트 - 원 크기: 개봉 첫 주 관객 수)
     # ----------------------------------------------------
     st.header("6. 개봉일 스크린 수, 총 관객 수, 개봉 첫 주 관객 수의 관계 (버블 차트)")
     
@@ -204,11 +210,37 @@ try:
     st.divider()
 
     # ----------------------------------------------------
-    # 구역 7: 개봉 첫 주 관객 vs 총 관객 수 관계 (산점도)
+    # 구역 7: 제작 국가별 장르 분포 (선버스트 차트) [새로 추가됨]
     # ----------------------------------------------------
-    st.header("7. 개봉 첫 주 관객과 총 관객 수의 관계")
+    st.header("7. 제작 국가 및 장르별 영화 편수 분포 (선버스트 차트)")
     
-    fig7 = px.scatter(
+    # 국가별 및 장르별 영화 편수 집계
+    nation_genre_counts = df.groupby(['nation_clean', 'genre_first']).size().reset_index(name='movie_count')
+    
+    fig7 = px.sunburst(
+        nation_genre_counts,
+        path=['nation_clean', 'genre_first'],
+        values='movie_count',
+        color='nation_clean',
+        color_discrete_sequence=px.colors.qualitative.Pastel,
+        title='제작 국가(nation) → 장르(genre)별 영화 편수 선버스트 차트'
+    )
+    fig7.update_traces(
+        hovertemplate='<b>국가/장르:</b> %{label}<br><b>영화 편수:</b> %{value}편<extra></extra>'
+    )
+    
+    st.plotly_chart(fig7, use_container_width=True)
+    
+    st.info("💡 **이 그래프로 알 수 있는 것:** 제작 국가별 전체 점유율과 함께 각 국가 내에서 어떤 장르의 영화가 주로 제작·수입되는지의 계층적 비중을 한눈에 파악할 수 있습니다.")
+
+    st.divider()
+
+    # ----------------------------------------------------
+    # 구역 8: 개봉 첫 주 관객 vs 총 관객 수 관계 (산점도)
+    # ----------------------------------------------------
+    st.header("8. 개봉 첫 주 관객과 총 관객 수의 관계")
+    
+    fig8 = px.scatter(
         df,
         x='first_week_audi',
         y='total_audi',
@@ -223,34 +255,34 @@ try:
         },
         title='개봉 첫 주 관객 수 vs 총 관객 수 (원 크기: 개봉일 스크린 수)'
     )
-    fig7.update_traces(
+    fig8.update_traces(
         hovertemplate='<b>%{hovertext}</b><br>개봉 첫 주 관객: %{x:,}명<br>총 관객: %{y:,}명<extra></extra>'
     )
     
-    st.plotly_chart(fig7, use_container_width=True)
+    st.plotly_chart(fig8, use_container_width=True)
     
     st.info("💡 **이 그래프로 알 수 있는 것:** 개봉 첫 주 관객 수가 많을수록 총 관객 수도 증가하는 강한 양의 상관관계를 보이며, 초기 흥행 여파가 최종 성패에 결정적인 영향을 준다는 점을 파악할 수 있습니다.")
 
     st.divider()
 
     # ----------------------------------------------------
-    # 구역 8: 주요 흥행 지표 간 상관관계 분석 (히트맵)
+    # 구역 9: 주요 흥행 지표 간 상관관계 분석 (히트맵)
     # ----------------------------------------------------
-    st.header("8. 흥행 지표 간 관계 분석")
+    st.header("9. 흥행 지표 간 관계 분석")
     
     num_cols = ['first_scrn', 'first_show', 'first_week_audi', 'total_audi', 'days_in_top10']
     available_cols = [c for c in num_cols if c in df.columns]
     
     if len(available_cols) > 1:
         corr = df[available_cols].corr()
-        fig8 = px.imshow(
+        fig9 = px.imshow(
             corr,
             text_auto='.2f',
             color_continuous_scale='Blues',
             title='흥행 지표 간 상관계수 히트맵',
             labels=dict(x="지표", y="지표", color="상관계수")
         )
-        st.plotly_chart(fig8, use_container_width=True)
+        st.plotly_chart(fig9, use_container_width=True)
         
         st.info("💡 **이 그래프로 알 수 있는 것:** 개봉일 스크린 수, 상영 횟수, 초기 관객 수 및 톱10 유지 기간 사이의 밀접한 상관성을 통해 스크린 확보 수준이 흥행 유지력에 미치는 파급력을 비교 분석할 수 있습니다.")
 
